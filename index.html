@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>자규시 - 단종</title>
+<link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: linear-gradient(180deg, #1a1025 0%, #2d1b3d 30%, #3d2a1a 70%, #5c3d1e 100%);
+    font-family: 'Nanum Myeongjo', 'Malgun Gothic', '맑은 고딕', serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Warm ambient glow */
+  .ambient {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 45%;
+    background: radial-gradient(ellipse at 50% 100%, rgba(180, 90, 20, 0.25) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* Snow canvas */
+  canvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  /* Ground snow */
+  .ground {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 3;
+    pointer-events: none;
+  }
+
+  /* Pine tree SVG */
+  .pine-tree {
+    position: fixed;
+    right: -10px;
+    bottom: 0;
+    z-index: 4;
+    width: 320px;
+    height: 550px;
+  }
+
+  /* Poem container */
+  .poem-container {
+    position: relative;
+    z-index: 10;
+    text-align: center;
+    color: #f5e8d0;
+    padding: 50px 60px;
+    background: rgba(10, 5, 20, 0.45);
+    border: 1px solid rgba(245, 220, 180, 0.15);
+    border-radius: 4px;
+    backdrop-filter: blur(3px);
+    box-shadow: 0 0 60px rgba(0,0,0,0.5), inset 0 0 40px rgba(180, 90, 20, 0.05);
+    max-width: 520px;
+    animation: fadeIn 2.5s ease forwards;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .poem-title {
+    font-size: 1.1rem;
+    letter-spacing: 0.4em;
+    color: rgba(245, 200, 140, 0.8);
+    margin-bottom: 6px;
+    font-weight: 400;
+  }
+
+  .poem-author {
+    font-size: 0.75rem;
+    letter-spacing: 0.3em;
+    color: rgba(200, 170, 130, 0.6);
+    margin-bottom: 36px;
+  }
+
+  .poem-divider {
+    width: 40px;
+    height: 1px;
+    background: rgba(245, 200, 140, 0.3);
+    margin: 0 auto 32px;
+  }
+
+  .poem-text {
+    font-size: 1.05rem;
+    line-height: 2.6;
+    letter-spacing: 0.12em;
+    color: #f0e0c8;
+    text-shadow: 0 0 20px rgba(180, 100, 30, 0.3);
+  }
+
+  .poem-text p {
+    margin-bottom: 4px;
+  }
+
+  .poem-note {
+    margin-top: 32px;
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    color: rgba(200, 170, 130, 0.45);
+    line-height: 1.8;
+  }
+
+  /* Stars */
+  .stars {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .star {
+    position: absolute;
+    background: white;
+    border-radius: 50%;
+    animation: twinkle var(--d) ease-in-out infinite alternate;
+  }
+
+  @keyframes twinkle {
+    from { opacity: var(--min); }
+    to { opacity: var(--max); }
+  }
+
+  /* Moon */
+  .moon {
+    position: fixed;
+    top: 60px;
+    left: 120px;
+    width: 55px;
+    height: 55px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 40% 40%, #fff8e8, #f5e0a0);
+    box-shadow: 0 0 30px rgba(255, 240, 180, 0.6), 0 0 80px rgba(255, 220, 120, 0.2);
+    z-index: 2;
+    animation: moonGlow 4s ease-in-out infinite alternate;
+  }
+
+  @keyframes moonGlow {
+    from { box-shadow: 0 0 30px rgba(255, 240, 180, 0.6), 0 0 80px rgba(255, 220, 120, 0.2); }
+    to { box-shadow: 0 0 40px rgba(255, 240, 180, 0.8), 0 0 100px rgba(255, 220, 120, 0.35); }
+  }
+
+  /* Audio button */
+  #audioBtn {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    z-index: 100;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid rgba(245, 220, 180, 0.35);
+    background: rgba(10, 5, 20, 0.55);
+    backdrop-filter: blur(6px);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.3s, background 0.3s, transform 0.2s;
+    box-shadow: 0 0 20px rgba(0,0,0,0.4);
+  }
+  #audioBtn:hover {
+    border-color: rgba(245, 200, 140, 0.65);
+    background: rgba(20, 10, 35, 0.7);
+    transform: scale(1.08);
+  }
+  #audioBtn svg {
+    width: 18px;
+    height: 18px;
+    fill: rgba(245, 200, 140, 0.85);
+    transition: fill 0.3s;
+  }
+  #audioBtn:hover svg { fill: rgba(245, 220, 160, 1); }
+
+  /* Intro overlay */
+  #introOverlay {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    background: rgba(8, 4, 15, 0.82);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: opacity 0.8s ease;
+  }
+  #introOverlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+  #introOverlay .intro-text {
+    color: rgba(245, 210, 160, 0.75);
+    font-family: 'Nanum Myeongjo', serif;
+    font-size: 0.85rem;
+    letter-spacing: 0.4em;
+    animation: pulse 2s ease-in-out infinite alternate;
+  }
+  #introOverlay .intro-icon {
+    margin-bottom: 18px;
+    opacity: 0.6;
+  }
+  @keyframes pulse {
+    from { opacity: 0.5; }
+    to { opacity: 1; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Intro overlay: click to start music -->
+<div id="introOverlay">
+  <div class="intro-icon">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="rgba(245,200,140,0.7)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9 18V5l12-2v13"/>
+      <circle cx="6" cy="18" r="3"/>
+      <circle cx="18" cy="16" r="3"/>
+    </svg>
+  </div>
+  <div class="intro-text">화면을 눌러 시작하세요</div>
+</div>
+
+<!-- Background audio -->
+<audio id="bgAudio" loop preload="auto">
+  <source src="bg.mp3" type="audio/mpeg">
+</audio>
+
+<!-- Audio toggle button -->
+<button id="audioBtn" title="음악 켜기/끄기" aria-label="음악 켜기/끄기">
+  <!-- Speaker ON icon (shown by default after play) -->
+  <svg id="iconOn" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <path d="M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+  </svg>
+  <!-- Speaker OFF icon (hidden by default) -->
+  <svg id="iconOff" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="display:none">
+    <path d="M11 5L6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6"/>
+  </svg>
+</button>
+
+<div class="ambient"></div>
+<div class="moon"></div>
+
+<!-- Stars -->
+<div class="stars" id="stars"></div>
+
+<!-- Snow canvas -->
+<canvas id="snowCanvas"></canvas>
+
+<!-- Ground accumulation canvas -->
+<canvas id="groundCanvas" class="ground" style="height:120px;"></canvas>
+
+<!-- Pine tree with owl -->
+<svg class="pine-tree" viewBox="0 0 320 550" xmlns="http://www.w3.org/2000/svg">
+  <!-- Tree trunk -->
+  <rect x="142" y="430" width="36" height="120" fill="#3d2010" rx="4"/>
+  <!-- Snow on ground around trunk -->
+  <ellipse cx="160" cy="548" rx="70" ry="12" fill="rgba(240,248,255,0.7)"/>
+
+  <!-- Bottom tier -->
+  <polygon points="160,290 30,480 290,480" fill="#1a3d1a"/>
+  <polygon points="160,290 30,480 290,480" fill="url(#treeGrad1)"/>
+  <!-- Snow on bottom tier -->
+  <path d="M60,450 Q160,430 258,450 Q200,460 160,458 Q120,460 60,450Z" fill="rgba(230,245,255,0.85)"/>
+  <path d="M80,430 Q160,415 240,430 Q200,440 160,438 Q120,440 80,430Z" fill="rgba(230,245,255,0.7)"/>
+
+  <!-- Middle tier -->
+  <polygon points="160,190 55,360 265,360" fill="#1f4d1f"/>
+  <polygon points="160,190 55,360 265,360" fill="url(#treeGrad2)"/>
+  <!-- Snow on middle tier -->
+  <path d="M85,335 Q160,318 235,335 Q200,345 160,343 Q120,345 85,335Z" fill="rgba(230,245,255,0.85)"/>
+  <path d="M100,318 Q160,304 220,318 Q190,326 160,324 Q130,326 100,318Z" fill="rgba(230,245,255,0.65)"/>
+
+  <!-- Top tier -->
+  <polygon points="160,90 80,245 240,245" fill="#265026"/>
+  <!-- Snow on top tier -->
+  <path d="M100,224 Q160,210 220,224 Q190,232 160,230 Q130,232 100,224Z" fill="rgba(230,245,255,0.85)"/>
+  <path d="M112,208 Q160,196 208,208 Q184,216 160,214 Q136,216 112,208Z" fill="rgba(230,245,255,0.6)"/>
+
+  <!-- Tree tip with snow -->
+  <polygon points="160,30 110,120 210,120" fill="#2d5e2d"/>
+  <polygon points="160,30 135,80 185,80" fill="rgba(230,245,255,0.8)"/>
+
+  <!-- Gradients -->
+  <defs>
+    <linearGradient id="treeGrad1" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#0d2a0d" stop-opacity="0.4"/>
+      <stop offset="0.5" stop-color="transparent"/>
+      <stop offset="1" stop-color="#1a3d1a" stop-opacity="0.2"/>
+    </linearGradient>
+    <linearGradient id="treeGrad2" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#0d2a0d" stop-opacity="0.3"/>
+      <stop offset="0.5" stop-color="transparent"/>
+      <stop offset="1" stop-color="#1a3d1a" stop-opacity="0.15"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Branch sticking out left (for owl to sit on) -->
+  <path d="M160,268 Q110,258 75,270 Q90,278 110,272 Q135,268 160,268" fill="#2a1505" stroke="#1a0e02" stroke-width="1"/>
+  <!-- Snow on branch -->
+  <path d="M80,267 Q118,262 158,266 Q138,272 110,272 Q93,272 80,267Z" fill="rgba(230,245,255,0.75)"/>
+
+  <!-- Owl sitting on branch -->
+  <g transform="translate(68, 238)">
+    <!-- Body -->
+    <ellipse cx="14" cy="20" rx="10" ry="13" fill="#8B6914"/>
+    <!-- Belly -->
+    <ellipse cx="14" cy="22" rx="6" ry="9" fill="#c8a96e"/>
+    <!-- Belly pattern (feather lines) -->
+    <line x1="14" y1="15" x2="14" y2="30" stroke="#a08040" stroke-width="0.5" opacity="0.5"/>
+    <line x1="10" y1="16" x2="12" y2="29" stroke="#a08040" stroke-width="0.4" opacity="0.5"/>
+    <line x1="18" y1="16" x2="16" y2="29" stroke="#a08040" stroke-width="0.4" opacity="0.5"/>
+    <!-- Head -->
+    <ellipse cx="14" cy="8" rx="9" ry="8" fill="#7a5c10"/>
+    <!-- Ear tufts -->
+    <polygon points="8,3 6,0 10,2" fill="#6b5010"/>
+    <polygon points="20,3 22,0 18,2" fill="#6b5010"/>
+    <!-- Eyes -->
+    <circle cx="10" cy="7" r="3.5" fill="#f5e090"/>
+    <circle cx="18" cy="7" r="3.5" fill="#f5e090"/>
+    <circle cx="10" cy="7" r="2" fill="#1a0a00"/>
+    <circle cx="18" cy="7" r="2" fill="#1a0a00"/>
+    <circle cx="10.7" cy="6.3" r="0.7" fill="white" opacity="0.9"/>
+    <circle cx="18.7" cy="6.3" r="0.7" fill="white" opacity="0.9"/>
+    <!-- Beak -->
+    <polygon points="14,10 11,12 17,12" fill="#d4a030"/>
+    <!-- Feet gripping branch -->
+    <line x1="10" y1="32" x2="8" y2="36" stroke="#8B6914" stroke-width="1.2"/>
+    <line x1="10" y1="32" x2="10" y2="37" stroke="#8B6914" stroke-width="1.2"/>
+    <line x1="10" y1="32" x2="12" y2="36" stroke="#8B6914" stroke-width="1.2"/>
+    <line x1="18" y1="32" x2="16" y2="36" stroke="#8B6914" stroke-width="1.2"/>
+    <line x1="18" y1="32" x2="18" y2="37" stroke="#8B6914" stroke-width="1.2"/>
+    <line x1="18" y1="32" x2="20" y2="36" stroke="#8B6914" stroke-width="1.2"/>
+    <!-- Snow on head -->
+    <path d="M6,4 Q14,-1 22,4 Q18,1 14,0 Q10,1 6,4Z" fill="rgba(230,245,255,0.75)"/>
+  </g>
+</svg>
+
+<!-- Poem -->
+<div class="poem-container">
+  <div class="poem-title">자 규 시</div>
+  <div class="poem-author">子規詩 · 단종端宗</div>
+  <div class="poem-divider"></div>
+  <div class="poem-text">
+    <p>月白山空夜 달 밝고 산 비어 밤 깊어 가는데</p>
+    <p>聞猿涕淚多 두견새 울음 소리 눈물만 흐르네</p>
+    <p>爾啼何太苦 너는 왜 그리도 슬피 우느냐</p>
+    <p>世事不如何 세상일이 내 뜻과 같지 않구나</p>
+    <p></p>
+    <p>一自寃禽出 한 번 억울한 새 되어 이 곳을 나오니</p>
+    <p>孤城落日中 외로운 성에 해는 저물어 가네</p>
+    <p>假眠猶抱恨 잠 드는 척하여도 한을 품고 있으니</p>
+    <p>無限不平鳴 무한한 불평이 울음이 되네</p>
+  </div>
+  <div class="poem-note">조선 제6대 국왕 · 1441–1457</div>
+</div>
+
+<script>
+// Audio
+const audio = document.getElementById('bgAudio');
+const audioBtn = document.getElementById('audioBtn');
+const iconOn = document.getElementById('iconOn');
+const iconOff = document.getElementById('iconOff');
+const introOverlay = document.getElementById('introOverlay');
+
+let audioStarted = false;
+
+function startAudio() {
+  if (audioStarted) return;
+  audioStarted = true;
+  audio.volume = 0;
+  audio.play().then(() => {
+    // Fade in volume
+    let vol = 0;
+    const fadeIn = setInterval(() => {
+      vol = Math.min(1, vol + 0.02);
+      audio.volume = vol;
+      if (vol >= 1) clearInterval(fadeIn);
+    }, 60);
+    introOverlay.classList.add('hidden');
+  }).catch(() => {
+    introOverlay.classList.add('hidden');
+  });
+}
+
+introOverlay.addEventListener('click', startAudio);
+
+audioBtn.addEventListener('click', () => {
+  if (!audioStarted) { startAudio(); return; }
+  if (audio.paused) {
+    audio.play();
+    iconOn.style.display = '';
+    iconOff.style.display = 'none';
+  } else {
+    audio.pause();
+    iconOn.style.display = 'none';
+    iconOff.style.display = '';
+  }
+});
+
+// Stars
+const starsEl = document.getElementById('stars');
+for (let i = 0; i < 80; i++) {
+  const s = document.createElement('div');
+  s.className = 'star';
+  const size = Math.random() * 2 + 0.5;
+  const min = Math.random() * 0.2 + 0.05;
+  const max = Math.random() * 0.5 + 0.3;
+  s.style.cssText = `
+    width:${size}px; height:${size}px;
+    top:${Math.random()*60}%;
+    left:${Math.random()*100}%;
+    --d:${Math.random()*3+2}s;
+    --min:${min};
+    --max:${max};
+    opacity:${min};
+  `;
+  starsEl.appendChild(s);
+}
+
+// Snow
+const canvas = document.getElementById('snowCanvas');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+const groundCanvas = document.getElementById('groundCanvas');
+const gctx = groundCanvas.getContext('2d');
+groundCanvas.width = window.innerWidth;
+groundCanvas.height = 120;
+
+window.addEventListener('resize', () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  groundCanvas.width = window.innerWidth;
+});
+
+// Ground snow accumulation data
+const groundResolution = 4;
+const cols = Math.ceil(window.innerWidth / groundResolution);
+const accumulation = new Float32Array(cols).fill(0);
+let totalAccum = 0;
+const maxTotal = 800; // melt trigger
+
+class Snowflake {
+  constructor() { this.reset(); }
+  reset() {
+    this.x = Math.random() * canvas.width;
+    this.y = -10;
+    this.r = Math.random() * 3 + 1;
+    this.speed = Math.random() * 1.2 + 0.3;
+    this.wind = (Math.random() - 0.5) * 0.6;
+    this.opacity = Math.random() * 0.5 + 0.4;
+    this.wobble = Math.random() * Math.PI * 2;
+    this.wobbleSpeed = Math.random() * 0.03 + 0.01;
+  }
+}
+
+const flakes = Array.from({length: 160}, () => new Snowflake());
+
+function drawGround() {
+  gctx.clearRect(0, 0, groundCanvas.width, groundCanvas.height);
+  gctx.beginPath();
+  gctx.moveTo(0, groundCanvas.height);
+  for (let i = 0; i < cols; i++) {
+    const y = groundCanvas.height - accumulation[i];
+    if (i === 0) gctx.moveTo(0, y);
+    else gctx.lineTo(i * groundResolution, y);
+  }
+  gctx.lineTo(groundCanvas.width, groundCanvas.height);
+  gctx.closePath();
+  const grad = gctx.createLinearGradient(0, 0, 0, groundCanvas.height);
+  grad.addColorStop(0, 'rgba(230,245,255,0.92)');
+  grad.addColorStop(1, 'rgba(210,235,255,0.7)');
+  gctx.fillStyle = grad;
+  gctx.fill();
+}
+
+let meltMode = false;
+let meltTimer = 0;
+
+function animate() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Melt check
+  totalAccum = accumulation.reduce((a,b) => a+b, 0);
+  if (totalAccum > maxTotal * cols / 50) {
+    meltMode = true;
+    meltTimer = 200;
+  }
+  if (meltMode) {
+    for (let i = 0; i < cols; i++) {
+      accumulation[i] = Math.max(0, accumulation[i] - 0.15);
+    }
+    meltTimer--;
+    if (meltTimer <= 0) meltMode = false;
+  }
+
+  for (const f of flakes) {
+    f.wobble += f.wobbleSpeed;
+    f.x += f.wind + Math.sin(f.wobble) * 0.5;
+    f.y += f.speed;
+
+    // Land on ground
+    const col = Math.floor(f.x / groundResolution);
+    if (col >= 0 && col < cols) {
+      const groundY = canvas.height - accumulation[col];
+      if (f.y >= groundY - 2 && !meltMode) {
+        accumulation[col] = Math.min(80, accumulation[col] + f.r * 0.4);
+        // spread to neighbors
+        if (col > 0) accumulation[col-1] = Math.min(80, accumulation[col-1] + f.r * 0.1);
+        if (col < cols-1) accumulation[col+1] = Math.min(80, accumulation[col+1] + f.r * 0.1);
+        f.reset();
+        continue;
+      }
+    }
+
+    if (f.y > canvas.height || f.x < -10 || f.x > canvas.width + 10) f.reset();
+
+    ctx.beginPath();
+    ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(230,245,255,${f.opacity})`;
+    ctx.shadowBlur = 4;
+    ctx.shadowColor = 'rgba(200,230,255,0.5)';
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+
+  drawGround();
+  requestAnimationFrame(animate);
+}
+
+animate();
+</script>
+</body>
+</html>
